@@ -1,0 +1,225 @@
+Stellar Foundation Grant Proposal
+
+Project: Privacy Pool — Privacy-Native Lending on Stellar
+Category: Protocol Innovation / ZK-DeFi
+Network: Stellar (Protocol 25)
+
+1. Executive Summary
+
+Privacy Pool is a privacy-native lending protocol built directly on Stellar using Protocol 25’s native zero-knowledge primitives. The protocol enables users to borrow assets by proving sufficient collateral without revealing wallet balances, exact collateral amounts, or identity on-chain.
+
+Current DeFi lending on Stellar exposes all collateral and loan positions publicly, which is incompatible with institutional requirements. Privacy Pool addresses this gap by introducing shielded collateral commitments and zero-knowledge solvency proofs, while preserving on-chain enforceability, liquidation, and protocol solvency.
+
+This project positions Stellar as one of the first networks with natively verifiable, privacy-preserving DeFi primitives, strengthening its competitiveness for institutional adoption.
+
+2. Problem Statement
+
+Most Stellar-based DeFi protocols are fully transparent. Lending platforms publicly expose:
+
+Collateral balances
+
+Loan positions
+
+Wallet-level financial activity
+
+While transparency benefits retail composability, it actively deters institutions, funds, and market makers who require confidentiality around leverage, capital allocation, and balance sheets.
+
+Privacy Pool solves this by enabling:
+
+Confidential collateralization
+
+Public solvency guarantees
+
+On-chain liquidation enforcement
+—all without introducing trusted intermediaries or off-chain dependencies.
+
+3. Proposed Solution
+Core Concept: Shielded Lending
+
+Users interact with a lending pool by:
+
+Depositing collateral and committing it as a Poseidon hash
+
+Generating a zero-knowledge proof that:
+
+Collateral value ≥ required collateral ratio
+
+Collateral is locked and unspent
+
+Borrowing assets only after on-chain proof verification
+
+The protocol enforces solvency and liquidation without ever revealing balances or identities.
+
+4. Technical Design Overview
+Cryptographic Foundations
+
+Elliptic Curve: BN254
+
+Hash Function: Poseidon
+
+Proof System: Groth16-compatible SNARKs
+
+Verification: On-chain via Stellar Protocol 25
+
+On-Chain Components
+
+Privacy Pool contract (collateral commitments, loans)
+
+ZK verifier contract
+
+Liquidation enforcement logic
+
+Price oracle integration (public, identity-agnostic)
+
+Privacy Guarantees
+
+No plaintext collateral amounts on-chain
+
+No linkable wallet balance disclosure
+
+No off-chain relayers, indexers, or proof services
+
+5. Why This Matters for Stellar
+
+Privacy Pool:
+
+Introduces first-class privacy primitives for DeFi on Stellar
+
+Leverages Protocol 25 ZK features, validating their real-world utility
+
+Creates a strong institutional on-ramp without sacrificing decentralization
+
+Differentiates Stellar from EVM-based DeFi ecosystems
+
+This project aligns directly with Stellar’s goals of enabling real-world financial use cases at scale.
+
+6. Deliverables
+
+Production-ready Soroban smart contracts
+
+ZK circuits for collateral and solvency proofs
+
+On-chain verifier integration
+
+Comprehensive security analysis and documentation
+
+Open-source reference implementation
+
+7. Funding Request (Indicative)
+
+Grant funding will be used for:
+
+ZK circuit design and auditing
+
+Soroban contract development
+
+Formal security review
+
+Testnet deployment and documentation
+
+8. Team & Execution Capability
+
+The team focuses on:
+
+Zero-knowledge systems
+
+DeFi protocol engineering
+
+Stellar Soroban development
+
+(Team details to be appended per foundation requirements.)
+
+9. Long-Term Vision
+
+Privacy Pool establishes a foundation for:
+
+Confidential credit markets
+
+Shielded interest rate products
+
+Selective disclosure for compliance
+
+Institutional-grade DeFi on Stellar
+
+🛠️ Technical Implementation Roadmap
+Phase 0 — Research & Specification (Weeks 1–3)
+
+Finalize threat model and trust assumptions
+
+Define solvency constraints and collateral ratios
+
+Specify ZK circuits (inputs, outputs, constraints)
+
+Formalize liquidation rules under privacy
+
+Milestone: Protocol specification document
+
+Phase 1 — ZK Circuit Development (Weeks 4–7)
+
+Implement Poseidon-based commitment scheme
+
+Build collateral adequacy circuits (BN254)
+
+Implement proof freshness and nonce logic
+
+Benchmark proof size and verification cost
+
+Milestone: Auditable ZK circuits with test vectors
+
+Phase 2 — Soroban Smart Contracts (Weeks 8–11)
+
+Privacy Pool core contract
+
+ZK verifier integration
+
+Loan issuance and repayment logic
+
+Liquidation enforcement mechanisms
+
+Milestone: End-to-end on-chain flow working on testnet
+
+Phase 3 — Security Review & Hardening (Weeks 12–14)
+
+Circuit soundness review
+
+Economic attack simulations
+
+Liquidation edge-case testing
+
+Gas / performance optimization
+
+Milestone: Security-reviewed testnet deployment
+
+Phase 4 — Testnet Launch & Documentation (Weeks 15–16)
+
+Public testnet release
+
+Developer documentation
+
+Protocol walkthroughs
+
+Feedback collection
+
+Milestone: Grant-complete deliverables submitted
+
+Phase 5 — Mainnet Readiness (Post-Grant)
+
+Final audits
+
+Governance considerations
+
+Mainnet deployment
+
+Ecosystem integrations
+
+Final Note
+
+Privacy Pool is intentionally designed to:
+
+Use only Stellar-native capabilities
+
+Avoid off-chain trust assumptions
+
+Provide verifiable privacy, not obfuscation
+
+This makes it a strong candidate for foundation support and a meaningful showcase of Protocol 25’s capabilities.
