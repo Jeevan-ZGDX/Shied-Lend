@@ -45,13 +45,20 @@ async function getPrice(asset_id) {
         const msgHash = poseidon([BigInt(price)]);
         const signature = eddsa.signPoseidon(oracleParams.prvKey, msgHash);
 
+        console.log("Signature obtained. R8:", signature.R8, "S:", signature.S);
+        console.log("Types:", {
+            R8_0: typeof signature.R8[0],
+            R8_1: typeof signature.R8[1],
+            S: typeof signature.S
+        });
+
         return {
             price_usd: price,
             timestamp: Date.now(),
             signature: {
-                R8x: eddsa.F.toString(signature.R8[0]),
-                R8y: eddsa.F.toString(signature.R8[1]),
-                S: eddsa.F.toString(signature.S)
+                R8x: eddsa.F.toBigInt(signature.R8[0]).toString(),
+                R8y: eddsa.F.toBigInt(signature.R8[1]).toString(),
+                S: signature.S.toString()
             },
             pubkey: oracleParams.pubKeyUnpacked
         };
