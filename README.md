@@ -1,15 +1,15 @@
 # Shied-Lend
-# ShieldLend
 
 > **Privacy-Preserving Lending Protocol on Stellar**  
 > Borrow against Real-World Assets without revealing your collateral position
 
-![ShieldLend Banner](https://via.placeholder.com/1200x300/1e3a8a/ffffff?text=ShieldLend+-+Privacy+Without+Transparency)
 
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet-blue)](https://stellar.org)
 [![Soroban](https://img.shields.io/badge/Soroban-Smart%20Contracts-purple)](https://soroban.stellar.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/b9848aa5-2b5d-4e08-9742-3b34d85f1d82" />
 ---
 
 ## 🎯 Overview
@@ -30,12 +30,8 @@
 
 ShieldLend consists of three Soroban smart contracts:
 
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ Vault       │ ──→ │ Lending Pool │ ──→ │ Liquidator  │
-│ (Deposits)  │     │ (Loans)      │     │ (Risk)      │
-└─────────────┘     └──────────────┘     └─────────────┘
+<img width="1023" height="287" alt="image" src="https://github.com/user-attachments/assets/3bbde486-72f4-49f8-a071-90a3189213eb" />
 
-text
 
 ### Contracts (Stellar Testnet)
 
@@ -52,7 +48,6 @@ Vault: CBTJ6QUVOJNWPEGDPL4ZILRUZIE5D53OKO3RLIW5CTADGVNT2LXWSL26
 Lending Pool: CBIDOQW3L3BL5YOBJY3HFNXLJ4E5U6GDELBCUV7KTTTMAPDUCOGY2S7E
 Liquidator: CBGKOAR2W5SQYKKJLKFGO7GFHPVK5S3KRQ7CSSXECDYPDBLUW3XBX33U
 
-text
 </details>
 
 ---
