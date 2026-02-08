@@ -8,7 +8,7 @@ We take security seriously and appreciate the community's help in identifying an
 
 ### Disclosure Process
 If you discover a security vulnerability, please **do not** open a public GitHub issue. Instead:
-1. **Email us** at [security contact - jeevansri15@gmail.com]
+1. **Email us** at [security contact - jeevansri15@gmail.com, devarajanm.magesh@gmail.com, pd652027@gmail.com]
 2. **Include details:**
    - Type and description of the vulnerability
    - Affected components (e.g., contracts, proving service, C++ circuits)
