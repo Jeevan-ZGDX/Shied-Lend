@@ -93,14 +93,12 @@ npm run dev
 # Runs on http://localhost:5173
 Access the App
 Open browser: http://localhost:5173
-
 Connect Freighter wallet (Testnet)
-
 Start depositing and borrowing!
+
 
 💡 How It Works
 1. Deposit Collateral (Private)
-text
 User deposits 1000 BENJI tokens
          ↓
 Generate secret key
@@ -114,8 +112,9 @@ Submit to Vault contract
 ✅ Amount hidden, deposit recorded
 Privacy: Only the commitment hash is stored on-chain, not the amount.
 
+
 2. Borrow Against Collateral
-text
+
 User requests 500 USDC loan
          ↓
 Generate ZK proof: "collateral ≥ loan × 1.5"
@@ -129,67 +128,46 @@ Privacy: Borrower proves sufficient collateral without revealing exact amount.
 
 3. Manage & Repay
 Monitor loan health factor (150% = healthy, <100% = liquidatable)
-
 Repay anytime to release collateral
-
 Automated liquidations protect protocol
 
 🔐 Privacy Model
 Hidden (Zero-Knowledge)
 ✅ Exact collateral amounts
-
 ✅ Deposit secrets/keys
-
 ✅ Position sizes
 
 Public (On-Chain)
 ✅ Commitment hashes
-
 ✅ Loan amounts (USDC)
-
 ✅ Asset types (BENJI, USDY)
-
 ✅ Health factors
-
 ✅ Liquidation events
-
 Result: Cryptographically private positions with public risk metrics.
 
 🛠️ Technology Stack
 Frontend
 React 18 + TypeScript
-
 Vite (build tool)
-
 Stellar SDK (@stellar/stellar-sdk)
-
 Freighter (wallet integration)
-
 Backend (Proving Service)
 Node.js + Express
-
 SnarkJS (Groth16 proof generation)
-
 Circom (ZK circuits)
-
 Smart Contracts
 Rust (Soroban SDK)
-
 X-Ray (BN254 cryptography)
-
 Groth16 (zero-knowledge proofs)
 
 Blockchain
 Stellar Testnet
-
 Soroban smart contracts
-
 Horizon API (balance queries)
 
 📊 Supported Assets
 Collateral (RWAs)
 BENJI: Franklin Templeton tokenized US Treasury fund ($98.50)
-
 USDY: Ondo Finance tokenized dollar yield ($1.00)
 
 Loan Asset
@@ -197,49 +175,32 @@ USDC: USD stablecoin
 
 Collateralization
 Minimum ratio: 150% (e.g., $150 collateral for $100 loan)
-
 Liquidation threshold: <100%
-
 Liquidation bonus: 5%
 
 📖 User Guide
 Deposit Workflow
 Navigate to Deposit page
-
 Select asset (BENJI/USDY)
-
 Enter amount
-
 Click "Generate Secret" → SAVE THIS KEY!
-
 Click "Deposit Privately"
-
 Sign transaction in Freighter
-
 Receive deposit ID
 
 Borrow Workflow
 Navigate to Borrow page
-
 Select your deposit
-
 Enter loan amount (max shown)
-
 Click "Request Loan"
-
 Wait for proof generation (~15s)
-
 Sign transaction
-
 Receive USDC
 
 Manage Loans
 Navigate to Manage page
-
 View active loans & health factors
-
 Click "Repay" to close loan
-
 Collateral released automatically
 
 🔬 Technical Details
@@ -250,7 +211,6 @@ Verification: On-chain via Soroban X-Ray
 
 Deposit Circuit:
 
-text
 template DepositProof() {
     signal input amount;
     signal input secret;
@@ -260,7 +220,6 @@ template DepositProof() {
 }
 Loan Circuit:
 
-text
 template LoanProof() {
     signal input collateral;
     signal input price;
@@ -290,50 +249,37 @@ Liquidator Contract:
 rust
 pub fn liquidate(liquidator: Address, loan_id: u64) -> LiquidationResult;
 pub fn get_health_factor(loan_id: u64) -> u32;
+
 🎯 Use Cases
 Institutional Lending
 Hedge funds borrow without exposing strategies
-
 Market makers access liquidity privately
-
 Family offices leverage holdings discretely
 
 DeFi Privacy
 Private collateral management
-
 Hidden position sizes
-
 Competitive privacy in transparent DeFi
 
 RWA Integration
 Borrow against tokenized treasuries
-
 Bridge TradFi and DeFi with privacy
-
 Regulatory-compliant private lending
 
 🛡️ Security
 Cryptographic Security
 ✅ Industry-standard Groth16 proofs
-
 ✅ BN254 elliptic curve (256-bit security)
-
 ✅ SHA-256 commitment schemes
 
 Smart Contract Security
 ✅ Soroban safety guarantees
-
 ✅ Over-collateralization (150% minimum)
-
 ✅ Automated liquidations
-
 ✅ No admin keys or upgradability
 
 Economic Security
 ✅ Oracle price feeds (5-min updates)
-
 ✅ Liquidation incentives (5% bonus)
-
 ✅ Health monitoring
-
 ✅ DEX integration for liquidations
