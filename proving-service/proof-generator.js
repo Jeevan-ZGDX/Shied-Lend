@@ -10,10 +10,6 @@ const CIRCUITS = {
     loan: {
         wasm: path.join(__dirname, 'circuits/loan_proof/loan_proof.wasm'),
         zkey: path.join(__dirname, 'circuits/loan_proof/loan_proof_final.zkey')
-    },
-    kyc: {
-        wasm: path.join(__dirname, 'circuits/kyc_proof/kyc_proof.wasm'),
-        zkey: path.join(__dirname, 'circuits/kyc_proof/kyc_proof_final.zkey')
     }
 };
 
@@ -94,21 +90,10 @@ async function generateLoanProof(input) {
     };
 }
 
-async function generateKycProof(input) {
-    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-        input,
-        CIRCUITS.kyc.wasm,
-        CIRCUITS.kyc.zkey
-    );
-    return {
-        proof: formatProofHex(proof, publicSignals),
-        public_signals: publicSignals.map(toHex)
-    };
-}
+
 
 module.exports = {
     init,
     generateDepositProof,
-    generateLoanProof,
-    generateKycProof
+    generateLoanProof
 };

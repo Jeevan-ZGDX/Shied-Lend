@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useWallet } from "../context/WalletContext";
+import { useNavigate } from "react-router-dom";
 import { generateDepositProof } from "../lib/api";
 import { depositCollateral } from "../lib/contracts";
+import { demoStore } from "../lib/demoStore";
 import toast from "react-hot-toast";
 import { OracleStatus } from '../components/OracleStatus';
 import PrivacyIndicator from "../components/PrivacyIndicator";
@@ -11,6 +13,7 @@ import { ViewingKey } from '../components/ViewingKey';
 
 export default function Deposit() {
   const { address } = useWallet();
+  const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [assetId, setAssetId] = useState(1); // Default to BENJI
   const [secret, setSecret] = useState("");
@@ -32,6 +35,17 @@ export default function Deposit() {
   };
 
   const handleDeposit = async () => {
+    // 🧹 Cache Clear for Demo
+    // @ts-ignore
+    if (window.performance && performance.navigation.type === 1) {
+      console.log('🔄 Clearing service worker cache...');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(r => r.unregister());
+        });
+      }
+    }
+
     console.log("Handle Deposit Clicked");
     console.log("State:", { address, amount, secret, secretSaved, loading, assetId });
 
@@ -83,6 +97,19 @@ export default function Deposit() {
 
       toast.success(`✅ Deposit successful! ID: ${depositId.depositId}`);
 
+      // Save to demo store for cross-page persistence
+      const selectedAssetName = assetId === 1 ? 'BENJI' : assetId === 2 ? 'USDY' : 'USDC';
+      demoStore.saveDeposit({
+        depositId: depositId.depositId.toString(),
+        user: address,
+        asset: selectedAssetName,
+        amount: parseFloat(amount),
+        timestamp: Date.now(),
+        txHash: depositId.txHash || 'demo-tx',
+        status: 'active'
+      });
+      console.log('💾 Deposit saved to demo store');
+
       setDepositResult({
         depositId: depositId.depositId,
         secret: secret,
@@ -93,6 +120,12 @@ export default function Deposit() {
       setAmount("");
       setSecret("");
       setSecretSaved(false);
+
+      // Auto-navigate to Borrow page after 3 seconds
+      setTimeout(() => {
+        toast.success('Redirecting to Borrow page...');
+        navigate('/borrow');
+      }, 3000);
     } catch (error: any) {
       console.error("Deposit error:", error);
 

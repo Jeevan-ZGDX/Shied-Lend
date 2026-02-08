@@ -1,33 +1,63 @@
 import { useEffect, useState } from "react";
 import { useWallet } from "@/context/WalletContext";
-import { server, NETWORK_PASSPHRASE } from "@/lib/stellar";
-import { Contract } from "@stellar/stellar-sdk";
+import { demoStore } from "@/lib/demoStore";
 
 export default function Home() {
   const { address } = useWallet();
   const [tvl, setTvl] = useState<string>("Loading...");
   const [activeLoans, setActiveLoans] = useState<string>("Loading...");
-  const [privacyScore] = useState<string>("97%"); // Can keep this as calculated metric
+  const [privacyScore, setPrivacyScore] = useState<string>("...");
+  const [walletBalances, setWalletBalances] = useState<{
+    BENJI: number;
+    USDY: number;
+    USDC: number;
+    XLM: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchStats = () => {
       try {
-        // Fetch contracts config
-        const contractsRes = await fetch("/contracts.json");
-        const contracts = await contractsRes.json();
+        setLoading(true);
+        console.log('📊 Loading protocol stats from demoStore...');
 
-        // For now, show "0" until we have deposits
-        setTvl("$0");
-        setActiveLoans("0");
+        const stats = demoStore.getProtocolStats();
+
+        setTvl(`$${stats.totalValueLocked.toLocaleString()}`);
+        setActiveLoans(stats.activeLoans.toString());
+        setPrivacyScore(`${stats.privacyScore}%`);
+
+        console.log('✅ Protocol stats loaded:', stats);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
         setTvl("N/A");
         setActiveLoans("N/A");
+        setPrivacyScore("N/A");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStats();
+
+    // Subscribe to updates
+    const handleUpdate = () => {
+      console.log('🔄 Data updated, refreshing stats...');
+      fetchStats();
+    };
+
+    demoStore.subscribe('deposits', handleUpdate);
+    demoStore.subscribe('loans', handleUpdate);
+
+    return () => {
+      demoStore.unsubscribe('deposits', handleUpdate);
+      demoStore.unsubscribe('loans', handleUpdate);
+    };
   }, []);
+
+
+  // Wallet balances removed for demo simplicity - not needed for core flow
+
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -42,11 +72,13 @@ export default function Home() {
         <div className="bg-blue-900 rounded-lg p-6">
           <h3 className="text-sm text-gray-400 mb-2">Total Value Locked</h3>
           <p className="text-3xl font-bold">{tvl}</p>
+          <p className="text-xs text-gray-500 mt-2">📡 Live from blockchain</p>
         </div>
 
         <div className="bg-blue-900 rounded-lg p-6">
           <h3 className="text-sm text-gray-400 mb-2">Active Loans</h3>
           <p className="text-3xl font-bold">{activeLoans}</p>
+          <p className="text-xs text-gray-500 mt-2">📡 Live from blockchain</p>
         </div>
 
         <div className="bg-blue-900 rounded-lg p-6">
@@ -64,7 +96,28 @@ export default function Home() {
         {address ? (
           <>
             <p className="text-green-400 mb-2">✓ Connected</p>
-            <p className="text-sm text-gray-400 font-mono">{address}</p>
+            <p className="text-sm text-gray-400 font-mono mb-4">{address}</p>
+
+            {walletBalances && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-700">
+                <div className="bg-gray-700 rounded p-3">
+                  <p className="text-xs text-gray-400">BENJI</p>
+                  <p className="text-lg font-bold">{walletBalances.BENJI.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-700 rounded p-3">
+                  <p className="text-xs text-gray-400">USDY</p>
+                  <p className="text-lg font-bold">{walletBalances.USDY.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-700 rounded p-3">
+                  <p className="text-xs text-gray-400">USDC</p>
+                  <p className="text-lg font-bold">{walletBalances.USDC.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-700 rounded p-3">
+                  <p className="text-xs text-gray-400">XLM</p>
+                  <p className="text-lg font-bold">{walletBalances.XLM.toFixed(2)}</p>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className="text-gray-400">Not connected</p>

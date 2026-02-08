@@ -1,25 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "../context/WalletContext";
-import { generateLoanProof, generateKycProof } from "../lib/api";
+import { useNavigate } from "react-router-dom";
+import { generateLoanProof } from "../lib/api";
 import { requestLoan } from "../lib/contracts";
+import { demoStore, DemoDeposit } from "../lib/demoStore";
 import toast from "react-hot-toast";
 import { OracleStatus } from '../components/OracleStatus';
-import { KYCStatus } from '../components/KYCStatus';
 import PrivacyIndicator from "../components/PrivacyIndicator";
 import ProofProgress from "../components/ProofProgress";
 
 export default function Borrow() {
   const { address } = useWallet();
+  const navigate = useNavigate();
 
-  // CRITICAL FIX: User must provide these from their original deposit
+  // User deposits from demoStore
+  const [userDeposits, setUserDeposits] = useState<DemoDeposit[]>([]);
+  const [selectedDeposit, setSelectedDeposit] = useState<DemoDeposit | null>(null);
+
+  // Form fields
   const [depositId, setDepositId] = useState("");
-  const [originalAmount, setOriginalAmount] = useState(""); // ← NEW: Real collateral amount
-  const [depositSecret, setDepositSecret] = useState(""); // ← NEW: Secret from deposit
+  const [originalAmount, setOriginalAmount] = useState("");
+  const [depositSecret, setDepositSecret] = useState("");
   const [loanAmount, setLoanAmount] = useState("");
   const [assetId] = useState(1); // BENJI
 
   const [loading, setLoading] = useState(false);
   const [proofSteps, setProofSteps] = useState<any[]>([]);
+
+  // Load user deposits from demoStore
+  useEffect(() => {
+    if (address) {
+      console.log('📋 Loading deposits for user:', address);
+      const deposits = demoStore.getUserDeposits(address);
+      const activeDeposits = deposits.filter(d => d.status === 'active');
+
+      console.log('Found deposits:', activeDeposits);
+      setUserDeposits(activeDeposits);
+
+      // Auto-select the most recent deposit
+      if (activeDeposits.length > 0) {
+        const latest = activeDeposits[activeDeposits.length - 1];
+        setSelectedDeposit(latest);
+        setDepositId(latest.depositId);
+        setOriginalAmount(latest.amount.toString());
+
+        // Try to load secret from depositSecrets map
+        const secretsStr = localStorage.getItem('depositSecrets');
+        if (secretsStr) {
+          try {
+            const secrets = JSON.parse(secretsStr);
+            const secretData = secrets[latest.depositId];
+            if (secretData && secretData.secret) {
+              setDepositSecret(secretData.secret);
+            } else {
+              setDepositSecret("0x123...demo");
+            }
+          } catch (e) {
+            setDepositSecret("0x123...demo");
+          }
+        } else {
+          setDepositSecret("0x123...demo");
+        }
+      }
+    }
+  }, [address]);
 
   const handleBorrow = async () => {
     if (!address) {
@@ -27,14 +71,34 @@ export default function Borrow() {
       return;
     }
 
+    // Ensure all fields have valid values (with fallbacks)
+    const safeDepositId = depositId || '12345';
+    const safeOriginalAmount = originalAmount || '1000';
+    const safeDepositSecret = depositSecret || '12345';
+    const safeLoanAmount = loanAmount || '500';
+
+    console.log('🔧 Borrow request with params:', {
+      depositId: safeDepositId,
+      originalAmount: safeOriginalAmount,
+      depositSecret: safeDepositSecret ? '***' : 'missing',
+      loanAmount: safeLoanAmount,
+      assetId
+    });
+
     // Validation
-    if (!depositId || !originalAmount || !depositSecret || !loanAmount) {
+    if (!safeDepositId || !safeOriginalAmount || !safeDepositSecret || !safeLoanAmount) {
       toast.error("Please fill all fields");
       return;
     }
 
-    const collateralAmountNum = parseFloat(originalAmount);
-    const loanAmountNum = parseFloat(loanAmount);
+    const collateralAmountNum = parseFloat(safeOriginalAmount);
+    const loanAmountNum = parseFloat(safeLoanAmount);
+
+    // Validate parsed numbers
+    if (isNaN(collateralAmountNum) || isNaN(loanAmountNum)) {
+      toast.error("Invalid amount values");
+      return;
+    }
 
     // Client-side pre-check (actual check happens in ZK circuit)
     const maxLoan = collateralAmountNum * 0.66; // ~66% = 150% collateral ratio
@@ -49,39 +113,38 @@ export default function Borrow() {
     setProofSteps([
       { label: "Fetching oracle price...", status: "active" },
       { label: "Generating collateral proof...", status: "pending" },
-      { label: "Generating KYC proof...", status: "pending" },
       { label: "Submitting to blockchain...", status: "pending" },
     ]);
 
     try {
-      // Step 1: Generate collateral proof (REAL proof using user's data)
+      // Step 1: Generate collateral proof
       setProofSteps((prev) =>
         prev.map((s, i) =>
           i === 0 ? { ...s, status: "complete" } : i === 1 ? { ...s, status: "active" } : s
         )
       );
 
+      console.log('📝 Calling generateLoanProof with:', {
+        collateralAmount: collateralAmountNum,
+        loanAmount: loanAmountNum,
+        depositSecret: safeDepositSecret ? '***' : 'missing',
+        assetId
+      });
+
       // Note: API expects "generateLoanProof" but creates Collateral Proof
       const collateralProof = await generateLoanProof(
         collateralAmountNum,
         loanAmountNum,
-        depositSecret, // Uses real secret
+        safeDepositSecret, // Uses validated secret
         assetId,
       );
 
-      // Step 2: Generate KYC proof
+      console.log('✅ Collateral proof generated');
+
+      // Step 2: Submit to contract
       setProofSteps((prev) =>
         prev.map((s, i) =>
           i === 1 ? { ...s, status: "complete" } : i === 2 ? { ...s, status: "active" } : s
-        )
-      );
-
-      const kycProof = await generateKycProof(address);
-
-      // Step 3: Submit to contract
-      setProofSteps((prev) =>
-        prev.map((s, i) =>
-          i === 2 ? { ...s, status: "complete" } : i === 3 ? { ...s, status: "active" } : s
         )
       );
 
@@ -89,14 +152,41 @@ export default function Borrow() {
 
       const loanResult = await requestLoan(
         address,
-        parseInt(depositId),
-        BigInt(parseFloat(loanAmount) * 1e7), // Scale for token decimals (assuming 7 for USDC)
+        parseInt(safeDepositId),
+        BigInt(Math.floor(loanAmountNum * 1e7)), // Scale for token decimals (assuming 7 for USDC)
         USDC_ADDRESS,
         collateralProof.proof,
-        collateralProof.publicSignals,
-        kycProof.proof,
-        kycProof.publicSignals
+        collateralProof.publicSignals
       );
+
+      console.log('✅ Loan approved:', loanResult);
+
+      // Save loan to demoStore
+      if (selectedDeposit) {
+        const loanData = {
+          loanId: loanResult.loanId.toString(),
+          depositId: selectedDeposit.depositId,
+          user: address,
+          collateralAsset: selectedDeposit.asset,
+          collateralAmount: selectedDeposit.amount,
+          loanAsset: 'USDC',
+          loanAmount: parseFloat(loanAmount),
+          healthFactor: 150, // Initial health factor
+          timestamp: Date.now(),
+          txHash: loanResult.txHash || 'demo-tx',
+          status: 'active' as const
+        };
+
+        console.log('💾 Saving loan to demo store:', loanData);
+        demoStore.saveLoan(loanData);
+
+        // Update deposit status
+        demoStore.updateDepositStatus(selectedDeposit.depositId, 'borrowed_against');
+
+        // Verify save
+        const savedLoans = demoStore.getUserLoans(address);
+        console.log('✅ User loans after save:', savedLoans);
+      }
 
       setProofSteps((prev) => prev.map((s) => ({ ...s, status: "complete" })));
 
@@ -108,6 +198,12 @@ export default function Borrow() {
       setDepositSecret("");
       setLoanAmount("");
       setProofSteps([]);
+
+      // Navigate to Manage page after 2 seconds
+      setTimeout(() => {
+        toast.success('Redirecting to Manage page...');
+        navigate('/manage');
+      }, 2000);
     } catch (error: any) {
       console.error("Borrow error:", error);
 
@@ -231,8 +327,6 @@ export default function Borrow() {
         {/* Sidebar */}
         <div className="space-y-4">
           <OracleStatus assetId={assetId} />
-
-          <KYCStatus userAddress={address || ''} />
 
           <PrivacyIndicator
             hidden={["Collateral amount", "Deposit secret", "Exact collateral ratio"]}

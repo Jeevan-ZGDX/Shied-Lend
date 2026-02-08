@@ -3,7 +3,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const proofGenerator = require('./proof-generator');
 const oracleClient = require('./oracle-client');
-const kycRegistry = require('./kyc-registry');
 
 const app = express();
 const PORT = 3000;
@@ -40,12 +39,7 @@ proofGenerator.init().then(() => {
     console.error('Failed to initialize proof generator:', err);
 });
 
-// Initialize KYC Registry
-kycRegistry.init().then(() => {
-    console.log('KYC Registry initialized');
-}).catch(err => {
-    console.error('Failed to initialize KYC registry:', err);
-});
+
 
 // Endpoint 1: Generate Deposit Proof
 app.post('/api/generate-deposit-proof', async (req, res) => {
@@ -181,71 +175,9 @@ app.post('/api/get-lenders', async (req, res) => {
     }
 });
 
-// Endpoint 4: Get KYC Proof / Check status
-app.post('/api/check-kyc', async (req, res) => {
-    try {
-        const { user_address } = req.body;
 
-        const approved = kycRegistry.isKYCApproved(user_address);
 
-        if (!approved) {
-            console.log(`KYC check failed for ${user_address}`);
-            return res.status(403).json({
-                approved: false,
-                message: 'Address not in KYC whitelist'
-            });
-        }
 
-        const proofData = kycRegistry.getKYCProof(user_address);
-        console.log(`KYC check passed for ${user_address}`);
-
-        res.json({
-            approved: true,
-            root: proofData.root,
-            proof: proofData.pathElements, // Simplified for frontend consumption if needed
-            pathElements: proofData.pathElements,
-            pathIndices: proofData.pathIndices
-        });
-    } catch (error) {
-        console.error('KYC check error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Endpoint 5: Generate KYC Proof (Circuit)
-app.post('/api/generate-kyc-proof', async (req, res) => {
-    try {
-        // Reuse logic from check-kyc to get merkle elements
-        const { user_id, merkle_proof } = req.body;
-
-        let paths, indices, root;
-
-        if (merkle_proof) {
-            paths = merkle_proof.pathElements;
-            indices = merkle_proof.pathIndices;
-            root = merkle_proof.root;
-        } else {
-            // Fetch from registry
-            const data = kycRegistry.getKYCProof(user_id);
-            paths = data.pathElements;
-            indices = data.pathIndices;
-            root = data.root;
-        }
-
-        const input = {
-            user_id,
-            pathElements: paths,
-            pathIndices: indices,
-            merkle_root: root
-        };
-
-        const result = await proofGenerator.generateKycProof(input);
-        res.json(result);
-    } catch (error) {
-        console.error('Error generating kyc proof:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
 app.listen(PORT, () => {
     console.log(`ShieldLend Proving Service running on port ${PORT}`);
