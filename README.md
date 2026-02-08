@@ -30,10 +30,10 @@
 
 ShieldLend consists of three Soroban smart contracts:
 
-┌─────────────┐ ┌──────────────┐ ┌─────────────┐
-│ Vault │ ──→ │ Lending Pool │ ──→ │ Liquidator │
-│ (Deposits) │ │ (Loans) │ │ (Risk) │
-└─────────────┘ └──────────────┘ └─────────────┘
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│ Vault       │ ──→ │ Lending Pool │ ──→ │ Liquidator  │
+│ (Deposits)  │     │ (Loans)      │     │ (Risk)      │
+└─────────────┘     └──────────────┘     └─────────────┘
 
 text
 
