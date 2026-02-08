@@ -1,4 +1,15 @@
-*.log
 node_modules/
-.DS_Store
+target/
+dist/
 .env
+.DS_Store
+*.log
+*.wasm
+!contracts/*/src/*.wasm
+*.zkey
+*.ptau
+*.r1cs
+*.sym
+circuits/build/
+frontend/circuits/
+proving-service/node_modules_old/

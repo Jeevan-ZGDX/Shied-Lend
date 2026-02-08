@@ -1,18 +1,19 @@
-import { Route, Routes, NavLink } from 'react-router-dom'
+import { Routes, Route, NavLink } from 'react-router-dom'
 import Home from './pages/Home'
 import Deposit from './pages/Deposit'
 import Borrow from './pages/Borrow'
 import Manage from './pages/Manage'
 import Liquidation from './pages/Liquidation'
+import { SelectLender } from './pages/SelectLender'
 import { useWallet } from './context/WalletContext'
 
 export default function App() {
   const { address, connect, installed, disconnect, isConnecting } = useWallet()
-  
+
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
-  
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-[#1f2752] bg-[#0b1026]/80 sticky top-0 backdrop-blur">
@@ -31,6 +32,7 @@ export default function App() {
             <NavLink to="/borrow" className="text-sm hover:text-white text-gray-300">Borrow</NavLink>
             <NavLink to="/manage" className="text-sm hover:text-white text-gray-300">Manage</NavLink>
             <NavLink to="/liquidation" className="text-sm hover:text-white text-gray-300">Liquidation</NavLink>
+            <NavLink to="/lenders" className="text-sm hover:text-white text-gray-300">Lenders</NavLink>
           </nav>
           <div>
             {installed ? (
@@ -39,7 +41,7 @@ export default function App() {
                   <div className="text-sm">
                     <span className="text-gray-300">Connected:</span> <span className="font-mono">{formatAddress(address)}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={disconnect}
                     className="text-xs px-3 py-1 rounded bg-red-600/20 border border-red-600/30 text-red-400 hover:bg-red-600/30 transition-colors"
                   >
@@ -47,8 +49,8 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   onClick={connect}
                   disabled={isConnecting}
                 >
@@ -68,6 +70,7 @@ export default function App() {
           <Route path="/borrow" element={<Borrow />} />
           <Route path="/manage" element={<Manage />} />
           <Route path="/liquidation" element={<Liquidation />} />
+          <Route path="/lenders" element={<SelectLender />} />
         </Routes>
       </main>
     </div>

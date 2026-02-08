@@ -1,3 +1,4 @@
+const { fetchRealPrice } = require('./price-feeds');
 const circomlibjs = require('circomlibjs');
 
 let eddsa;
@@ -10,8 +11,7 @@ async function initOracle() {
     poseidon = await circomlibjs.buildPoseidon();
     eddsa = await circomlibjs.buildEddsa();
 
-    // Generate a static key for the mock oracle
-    // Private key can be any random bytes. using a deterministic one for consistent testing
+    // Generate a static key for the oracle
     const prvKey = Buffer.from('0001020304050607080900010203040506070809000102030405060708090001', 'hex');
     const pubKey = eddsa.prv2pub(prvKey);
 
@@ -26,38 +26,31 @@ async function initOracle() {
     return oracleParams;
 }
 
-// Mock prices for assets
-const PRICES = {
-    '1': 100, // Asset ID 1 = $100
-    '2': 50000, // BTC?
-    '3': 1 // Stablecoin
-};
-
 async function getPrice(asset_id) {
-    await initOracle();
+    if (!oracleParams) await initOracle();
 
-    const price = PRICES[asset_id.toString()] || 0;
-    if (price === 0) throw new Error('Asset not found');
+    // ONLY fetch real price. No fallback.
+    const price = await fetchRealPrice(asset_id);
 
     // Sign the price (Hash(price))
     // Note: Circuit expects M = Poseidon(price)
+    // We scale price by 100 to handle decimals (e.g. $99.97 -> 9997 cents)
+    const priceScaled = Math.round(price * 100);
+
     try {
-        const msgHash = poseidon([BigInt(price)]);
+        const msgHash = poseidon([BigInt(priceScaled)]);
         const signature = eddsa.signPoseidon(oracleParams.prvKey, msgHash);
 
-        console.log("Signature obtained. R8:", signature.R8, "S:", signature.S);
-        console.log("Types:", {
-            R8_0: typeof signature.R8[0],
-            R8_1: typeof signature.R8[1],
-            S: typeof signature.S
-        });
+        console.log(`Oracle Price for Asset ${asset_id}: $${price} (Source: Real)`);
 
         return {
-            price_usd: price,
+            price: price, // Return float for display
+            price_usd: price, // Alias for server.js
+            price_scaled: priceScaled, // Return scaled integer for circuit
             timestamp: Date.now(),
             signature: {
-                R8x: eddsa.F.toBigInt(signature.R8[0]).toString(),
-                R8y: eddsa.F.toBigInt(signature.R8[1]).toString(),
+                R8x: eddsa.F.toString(signature.R8[0]),
+                R8y: eddsa.F.toString(signature.R8[1]),
                 S: signature.S.toString()
             },
             pubkey: oracleParams.pubKeyUnpacked

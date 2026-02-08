@@ -1,58 +1,17 @@
-import { Account, Asset, Memo, Operation, TransactionBuilder } from 'stellar-sdk'
+import { SorobanRpc, Networks } from "@stellar/stellar-sdk";
 
-export type ContractsConfig = {
-  vault: string
-  lending_pool: string
-  liquidator: string
-}
+// Horizon server for testnet
+export const HORIZON = "https://horizon-testnet.stellar.org";
 
-export async function fetchContracts(): Promise<ContractsConfig> {
-  const res = await fetch('/contracts.json')
-  return res.json()
-}
+// Soroban RPC server for testnet
+export const SOROBAN_RPC_URL = "https://soroban-testnet.stellar.org";
 
-export const HORIZON = (import.meta.env.VITE_STELLAR_NETWORK ?? 'TESTNET') === 'PUBLIC'
-  ? 'https://horizon.stellar.org'
-  : 'https://horizon-testnet.stellar.org'
+// Network passphrase
+export const NETWORK_PASSPHRASE = Networks.TESTNET;
 
-export const PASSPHRASE = (import.meta.env.VITE_STELLAR_NETWORK ?? 'TESTNET') === 'PUBLIC'
-  ? 'Public Global Stellar Network ; September 2015'
-  : 'Test SDF Network ; September 2015'
+// Create Soroban server instance
+export const server = new SorobanRpc.Server(SOROBAN_RPC_URL);
 
-export async function buildManageDataTx(address: string, key: string, value: string) {
-  const acc = await fetch(`${HORIZON}/accounts/${address}`).then(r => r.json())
-  const account = new Account(address, acc.sequence)
-  const tx = new TransactionBuilder(account as unknown as Account, {
-    fee: '100',
-    networkPassphrase: PASSPHRASE
-  })
-    .addOperation(Operation.manageData({ name: key, value }))
-    .addMemo(Memo.text('shieldlend'))
-    .setTimeout(60)
-    .build()
-  return tx
-}
-
-export async function simulatePathPayment(address: string, sendAmount: string) {
-  const acc = await fetch(`${HORIZON}/accounts/${address}`).then(r => r.json())
-  const account = new Account(address, acc.sequence)
-  const usdc = new Asset('USDC', 'GA5ZSEJYB37I3W52MRG4E232SCDAD4W7DUR4B3C5XQHE2LUV6ZEMBGOI') // example issuer on testnet
-  const tx = new TransactionBuilder(account as unknown as Account, {
-    fee: '100',
-    networkPassphrase: PASSPHRASE
-  })
-    .addOperation(
-      Operation.pathPaymentStrictSend({
-        sendAsset: Asset.native(),
-        sendAmount,
-        destination: address,
-        destAsset: usdc,
-        destMin: '0.1',
-        path: []
-      })
-    )
-    .addMemo(Memo.text('liquidation-demo'))
-    .setTimeout(60)
-    .build()
-  return tx
-}
+// Export constants
+export const TESTNET = "TESTNET";
+export const MAINNET = "MAINNET";

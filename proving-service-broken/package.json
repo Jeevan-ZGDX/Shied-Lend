@@ -1,0 +1,24 @@
+{
+  "name": "proving-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-oracle": "node test-oracle.js",
+    "test-e2e": "node test-e2e-verification.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.13.4",
+    "body-parser": "^2.2.2",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "snarkjs": "^0.7.6",
+    "axios": "^1.6.0"
+  }
+}

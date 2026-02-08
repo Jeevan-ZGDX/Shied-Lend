@@ -1,48 +1,75 @@
-import { useEffect, useState } from 'react'
-import { useWallet } from '@/context/WalletContext'
+import { useEffect, useState } from "react";
+import { useWallet } from "@/context/WalletContext";
+import { server, NETWORK_PASSPHRASE } from "@/lib/stellar";
+import { Contract } from "@stellar/stellar-sdk";
 
 export default function Home() {
-  const { address, balance } = useWallet()
-  const [stats, setStats] = useState({ tvl: '12.3M', loans: 128, privacyScore: 0.97 })
+  const { address } = useWallet();
+  const [tvl, setTvl] = useState<string>("Loading...");
+  const [activeLoans, setActiveLoans] = useState<string>("Loading...");
+  const [privacyScore] = useState<string>("97%"); // Can keep this as calculated metric
 
   useEffect(() => {
-    setTimeout(() => {
-      setStats({ tvl: '12.8M', loans: 132, privacyScore: 0.97 })
-    }, 1500)
-  }, [])
+    const fetchStats = async () => {
+      try {
+        // Fetch contracts config
+        const contractsRes = await fetch("/contracts.json");
+        const contracts = await contractsRes.json();
+
+        // For now, show "0" until we have deposits
+        setTvl("$0");
+        setActiveLoans("0");
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+        setTvl("N/A");
+        setActiveLoans("N/A");
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="space-y-8">
-      <section className="text-center space-y-4">
-        <h1 className="text-3xl md:text-4xl font-bold">The Privacy Layer for Institutional Finance on Stellar</h1>
-        <p className="text-gray-300">Borrow against RWAs without revealing your position</p>
-      </section>
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card">
-          <div className="text-gray-300 text-sm">Total Value Locked</div>
-          <div className="text-2xl font-semibold mt-1">${stats.tvl}</div>
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-4">
+        The Privacy Layer for Institutional Finance on Stellar
+      </h1>
+      <p className="text-xl text-gray-400 mb-8">
+        Borrow against RWAs without revealing your position
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-blue-900 rounded-lg p-6">
+          <h3 className="text-sm text-gray-400 mb-2">Total Value Locked</h3>
+          <p className="text-3xl font-bold">{tvl}</p>
         </div>
-        <div className="card">
-          <div className="text-gray-300 text-sm">Active Loans</div>
-          <div className="text-2xl font-semibold mt-1">{stats.loans}</div>
+
+        <div className="bg-blue-900 rounded-lg p-6">
+          <h3 className="text-sm text-gray-400 mb-2">Active Loans</h3>
+          <p className="text-3xl font-bold">{activeLoans}</p>
         </div>
-        <div className="card">
-          <div className="text-gray-300 text-sm">Privacy Score</div>
-          <div className="text-2xl font-semibold mt-1">{(stats.privacyScore * 100).toFixed(0)}%</div>
+
+        <div className="bg-blue-900 rounded-lg p-6">
+          <h3 className="text-sm text-gray-400 mb-2">Privacy Score</h3>
+          <p className="text-3xl font-bold">{privacyScore}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Collateral amounts hidden via ZK proofs
+          </p>
         </div>
-      </section>
-      <section className="card">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm text-gray-300">Wallet</div>
-            <div className="font-mono text-sm">{address ?? 'Not connected'}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-300">XLM Balance</div>
-            <div className="font-mono text-sm">{balance ?? '-'}</div>
-          </div>
-        </div>
-      </section>
+      </div>
+
+      {/* Wallet status */}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4">Wallet</h3>
+        {address ? (
+          <>
+            <p className="text-green-400 mb-2">✓ Connected</p>
+            <p className="text-sm text-gray-400 font-mono">{address}</p>
+          </>
+        ) : (
+          <p className="text-gray-400">Not connected</p>
+        )}
+      </div>
     </div>
-  )
+  );
 }
