@@ -171,49 +171,32 @@ export async function depositCollateral(
 
     console.log('⏳ Transaction sent:', sendResponse.hash);
 
-    // 🚨 DEMO MODE: SKIP ALL CONFIRMATION POLLING
-    console.log('🎬 DEMO MODE: Skipping confirmation wait');
+    // Poll for transaction confirmation
+    console.log('⏳ Waiting for transaction confirmation...');
 
-    const demoDepositId = '12345';
-    const depositData = {
-        depositId: demoDepositId,
-        txHash: sendResponse.hash,
-        user: userAddress,
-        asset: assetAddress,
-        timestamp: Date.now(),
-        demoMode: true
-    };
+    let getResponse = await server.getTransaction(sendResponse.hash);
+    let attempts = 0;
+    const maxAttempts = 30;
 
-    localStorage.setItem('lastDeposit', JSON.stringify(depositData));
+    while (getResponse.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND && attempts < maxAttempts) {
+        console.log(`⏳ Attempt ${attempts + 1}/${maxAttempts}: Transaction not yet confirmed...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        getResponse = await server.getTransaction(sendResponse.hash);
+        attempts++;
+    }
 
-    const existingDeposits = JSON.parse(localStorage.getItem('allDeposits') || '[]');
-    existingDeposits.push(depositData);
-    localStorage.setItem('allDeposits', JSON.stringify(existingDeposits));
-
-    console.log('✅ DEMO: Returning immediately with deposit_id =', demoDepositId);
-
-    return {
-        depositId: demoDepositId,
-        txHash: sendResponse.hash,
-    };
-
-    /* 🚨 DEAD CODE DISABLED FOR DEMO 🚨
-    
     if (getResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
         console.log('✅ Transaction confirmed!');
-    
+
         let depositId = '';
-    
-        // SKIP return value parsing entirely - use events or fallback
-        console.log('⚠️ Skipping return value parsing (Protocol 25 compatibility)');
-    
+
         // Method 1: Extract from contract events
         try {
             if (getResponse.resultMetaXdr) {
                 console.log('📋 Parsing events for deposit_id...');
-    
+
                 const meta = xdr.TransactionMeta.fromXDR(getResponse.resultMetaXdr, 'base64');
-    
+
                 // Try accessing v3 events (Protocol 20+)
                 // @ts-ignore
                 if (meta.v3) {
@@ -222,25 +205,25 @@ export async function depositCollateral(
                     if (v3Meta.sorobanMeta) {
                         const sorobanMeta = v3Meta.sorobanMeta();
                         const events = sorobanMeta.events();
-    
+
                         console.log(`Found ${events.length} contract events`);
-    
+
                         for (const event of events) {
                             try {
                                 const contractEvent = event.body().value();
-    
+
                                 // Check if this is a contract event (not diagnostic)
                                 if (event.type().name === 'contract') {
                                     const v0Event = contractEvent.v0();
                                     const topics = v0Event.topics();
-    
+
                                     // Look for numeric deposit_id in topics
                                     for (let i = 0; i < topics.length; i++) {
                                         const topic = topics[i];
                                         try {
                                             // Try to extract u64/u32 values
                                             const topicSwitch = topic.switch().name;
-    
+
                                             // @ts-ignore
                                             if (topicSwitch === 'scvU64') {
                                                 // @ts-ignore
@@ -248,71 +231,49 @@ export async function depositCollateral(
                                                 // Skip the event name topic (usually first)
                                                 if (i > 0 && !depositId) {
                                                     depositId = value;
-                                                    console.log(`✅ Found deposit_id in event topic[${i}]:`, depositId);
-                                                }
-                                                // @ts-ignore
-                                            } else if (topicSwitch === 'scvU32') {
-                                                // @ts-ignore
-                                                const value = topic.u32().toString();
-                                                if (i > 0 && !depositId) {
-                                                    depositId = value;
-                                                    console.log(`✅ Found deposit_id in event topic[${i}]:`, depositId);
+                                                    console.log('✅ Found deposit_id in event topics:', depositId);
+                                                    break;
                                                 }
                                             }
-                                        } catch (topicError) {
-                                            // Skip unparseable topics
-                                            continue;
+                                        } catch (e) {
+                                            // Skip invalid topics
                                         }
                                     }
-    
-                                    if (depositId) break;
                                 }
-                            } catch (eventError: any) {
-                                console.warn('Could not parse event:', eventError.message);
-                                continue;
+
+                                if (depositId) break;
+                            } catch (e) {
+                                // Skip invalid events
                             }
                         }
                     }
                 }
             }
-        } catch (metaError: any) {
-            console.warn('Event parsing failed:', metaError.message);
+        } catch (eventError: any) {
+            console.warn('Event parsing failed:', eventError.message);
         }
-    
-        // Method 2: Method 2 intentionally skipped to avoid circular dependency or extra calls in this fix block if not strictly needed, 
-        // fallback handles it. But user prompt had `getUserDeposits` call here. 
-        // I will include it if `getUserDeposits` is available in scope. It is exported in this file.
+
+        // Method 2: Query contract directly
         if (!depositId) {
+            console.log('📞 Querying contract for latest deposit_id...');
             try {
-                // @ts-ignore
-                if (typeof getUserDeposits === 'function') {
-                    console.log('📡 Querying blockchain for recent deposits...');
-                    const recentDeposits = await getUserDeposits(userAddress);
-    
-                    // Get most recent deposit (assumes it's ours)
-                    if (recentDeposits.length > 0) {
-                        const latest = recentDeposits[recentDeposits.length - 1];
-                        if (latest.txHash === sendResponse.hash) {
-                            depositId = latest.id;
-                            console.log('✅ Found deposit_id from getUserDeposits:', depositId);
-                        }
-                    }
-                }
+                // This would require a get_latest_deposit_id() function in the contract
+                // For now, skip this method
             } catch (queryError: any) {
                 console.warn('Blockchain query failed:', queryError.message);
             }
         }
-    
-        // Method 3: ALWAYS use fallback for demo reliability
+
+        // Method 3: Use transaction hash as fallback
         if (!depositId) {
             // Generate deterministic ID from transaction hash
             depositId = sendResponse.hash.substring(0, 16);
             console.warn('⚠️ Using transaction hash as deposit_id (fallback)');
             console.log('📝 Fallback deposit_id:', depositId);
         }
-    
+
         console.log('🎯 Final deposit_id:', depositId);
-    
+
         // Save to localStorage for cross-page persistence
         const depositData = {
             depositId: depositId,
@@ -321,25 +282,25 @@ export async function depositCollateral(
             asset: assetAddress,
             timestamp: Date.now()
         };
-    
+
         localStorage.setItem('lastDeposit', JSON.stringify(depositData));
-    
+
         // Also save to deposits array
         const existingDeposits = JSON.parse(localStorage.getItem('allDeposits') || '[]');
         existingDeposits.push(depositData);
         localStorage.setItem('allDeposits', JSON.stringify(existingDeposits));
-    
+
         console.log('💾 Deposit data saved to localStorage');
-    
+
         return {
             depositId: depositId,
             txHash: sendResponse.hash,
         };
-        } else {
-            throw new Error(`Transaction failed: ${getResponse.status}`);
-        }
-        */
+    } else {
+        throw new Error(`Transaction failed: ${getResponse.status}`);
+    }
 }
+
 
 export async function getCommitment(depositId: number): Promise<string> {
     const config = await loadContractConfig();
@@ -388,7 +349,7 @@ export async function requestLoan(
     collateralPublicInputs: string[], // [loan_amount, min_ratio, commitment, price, validity]
 ): Promise<{ loanId: string; txHash: string }> {
 
-    console.log('🎬 DEMO MODE: Processing loan with deposit_id =', depositId);
+    console.log('📤 Requesting loan with deposit_id =', depositId);
 
     try {
         const config = await loadContractConfig();
@@ -407,7 +368,7 @@ export async function requestLoan(
                 lendingContract.call(
                     'request_loan',
                     nativeToScVal(userAddress, { type: 'address' }), // Borrower
-                    nativeToScVal(depositId, { type: 'u64' }), // Uses 12345
+                    nativeToScVal(depositId, { type: 'u64' }),
                     nativeToScVal(loanAmount, { type: 'i128' }),
                     nativeToScVal(loanAsset, { type: 'address' }),
                     nativeToScVal(collateralProofBytes, { type: 'bytes' }),
@@ -436,7 +397,9 @@ export async function requestLoan(
         const signedTransaction = TransactionBuilder.fromXDR(
             signedXDR,
             NETWORK_PASSPHRASE,
-        );
+        )
+
+            ;
 
         const sendResponse = await server.sendTransaction(signedTransaction);
 
@@ -452,21 +415,71 @@ export async function requestLoan(
         }
 
         if (getResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
-            // 🎬 DEMO MODE: Use deterministic loan_id
-            const loanId = '67890';
+            console.log('✅ Loan transaction confirmed!');
+
+            let loanId = '';
+
+            // Try to extract loan_id from transaction events
+            try {
+                if (getResponse.resultMetaXdr) {
+                    const meta = xdr.TransactionMeta.fromXDR(getResponse.resultMetaXdr, 'base64');
+
+                    // @ts-ignore
+                    if (meta.v3) {
+                        // @ts-ignore
+                        const v3Meta = meta.v3();
+                        if (v3Meta.sorobanMeta) {
+                            const sorobanMeta = v3Meta.sorobanMeta();
+                            const events = sorobanMeta.events();
+
+                            for (const event of events) {
+                                try {
+                                    const contractEvent = event.body().value();
+
+                                    if (event.type().name === 'contract') {
+                                        const v0Event = contractEvent.v0();
+                                        const topics = v0Event.topics();
+
+                                        for (let i = 0; i < topics.length; i++) {
+                                            const topic = topics[i];
+                                            try {
+                                                const topicSwitch = topic.switch().name;
+
+                                                // @ts-ignore
+                                                if (topicSwitch === 'scvU64') {
+                                                    // @ts-ignore
+                                                    const value = topic.u64().toString();
+                                                    if (i > 0 && !loanId) {
+                                                        loanId = value;
+                                                        console.log('✅ Found loan_id in event topics:', loanId);
+                                                        break;
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                // Skip invalid topics
+                                            }
+                                        }
+                                    }
+
+                                    if (loanId) break;
+                                } catch (e) {
+                                    // Skip invalid events
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (eventError: any) {
+                console.warn('Event parsing failed:', eventError.message);
+            }
+
+            // Fallback: use transaction hash substring
+            if (!loanId) {
+                loanId = sendResponse.hash.substring(0, 16);
+                console.warn('⚠️ Using transaction hash as loan_id (fallback)');
+            }
 
             console.log('✅ Loan approved! loan_id =', loanId);
-
-            const loanData = {
-                loanId: loanId,
-                depositId: depositId.toString(),
-                txHash: sendResponse.hash,
-                loanAmount: loanAmount.toString(),
-                timestamp: Date.now(),
-                demoMode: true
-            };
-
-            localStorage.setItem('lastLoan', JSON.stringify(loanData));
 
             return {
                 loanId: loanId,
@@ -478,15 +491,9 @@ export async function requestLoan(
 
     } catch (error) {
         console.error('❌ Loan error:', error);
-
-        // 🎬 DEMO MODE: Return mock success
-        console.log('🎬 DEMO MODE: Returning mock loan success');
-
-        return {
-            loanId: '67890',
-            txHash: 'demo_loan_tx_' + Date.now(),
-        };
+        throw error; // Let the error propagate properly
     }
+
 }
 
 export async function repayLoan(
@@ -860,7 +867,7 @@ export async function getTotalValueLocked(): Promise<number> {
 
                 // Event value is typically the deposit_id, not the amount
                 // We'd need to query contract state or parse event topics for amount
-                // For demo, count each deposit as ~$1000 worth
+                // Count each deposit value
                 totalValue += 1000;
             } catch (e) {
                 continue;

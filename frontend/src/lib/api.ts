@@ -80,18 +80,12 @@ export async function generateLoanProof(
   } catch (error: any) {
     console.error('❌ Loan proof generation failed:', error);
 
-    // Return mock proof for demo continuity
-    console.log('🎬 Using fallback mock proof');
-    return {
-      proof: {
-        pi_a: ['0', '0'],
-        pi_b: [['0', '0'], ['0', '0']],
-        pi_c: ['0', '0']
-      },
-      publicSignals: ['0', '0', '0', '0', '0'],
-      elapsedMs: 0
-    };
+    if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      throw new Error("Oracle service offline. Is it running on port 3000?");
+    }
+    throw new Error(error.response?.data?.error || error.message);
   }
+
 }
 
 

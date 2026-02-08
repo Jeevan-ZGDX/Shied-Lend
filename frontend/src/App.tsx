@@ -4,7 +4,6 @@ import Deposit from './pages/Deposit'
 import Borrow from './pages/Borrow'
 import Manage from './pages/Manage'
 import Liquidation from './pages/Liquidation'
-import { SelectLender } from './pages/SelectLender'
 import { useWallet } from './context/WalletContext'
 
 export default function App() {
@@ -32,7 +31,6 @@ export default function App() {
             <NavLink to="/borrow" className="text-sm hover:text-white text-gray-300">Borrow</NavLink>
             <NavLink to="/manage" className="text-sm hover:text-white text-gray-300">Manage</NavLink>
             <NavLink to="/liquidation" className="text-sm hover:text-white text-gray-300">Liquidation</NavLink>
-            <NavLink to="/lenders" className="text-sm hover:text-white text-gray-300">Lenders</NavLink>
           </nav>
           <div>
             {installed ? (
@@ -71,7 +69,6 @@ export default function App() {
           <Route path="/borrow" element={<Borrow />} />
           <Route path="/manage" element={<Manage />} />
           <Route path="/liquidation" element={<Liquidation />} />
-          <Route path="/lenders" element={<SelectLender />} />
         </Routes>
       </main>
     </div>

@@ -3,7 +3,6 @@ import { useWallet } from "../context/WalletContext";
 import { useNavigate } from "react-router-dom";
 import { generateDepositProof } from "../lib/api";
 import { depositCollateral } from "../lib/contracts";
-import { demoStore } from "../lib/demoStore";
 import toast from "react-hot-toast";
 import { OracleStatus } from '../components/OracleStatus';
 import PrivacyIndicator from "../components/PrivacyIndicator";
@@ -93,35 +92,17 @@ export default function Deposit() {
         proof.proof,
         proof.publicSignals
       );
-      console.log("Transaction result:", depositId);
+      console.log('✅ Deposit successful:', depositId);
 
-      toast.success(`✅ Deposit successful! ID: ${depositId.depositId}`);
+      toast.success(`✅ Deposit Successful! ID: ${depositId.depositId}`);
+      toast.success(`Transaction: ${depositId.txHash}`);
 
-      // Save to demo store for cross-page persistence
-      const selectedAssetName = assetId === 1 ? 'BENJI' : assetId === 2 ? 'USDY' : 'USDC';
-      demoStore.saveDeposit({
-        depositId: depositId.depositId.toString(),
-        user: address,
-        asset: selectedAssetName,
-        amount: parseFloat(amount),
-        timestamp: Date.now(),
-        txHash: depositId.txHash || 'demo-tx',
-        status: 'active'
-      });
-      console.log('💾 Deposit saved to demo store');
-
-      setDepositResult({
-        depositId: depositId.depositId,
-        secret: secret,
-        amount: amount,
-        assetId: assetId
-      });
-
+      // Reset form
       setAmount("");
       setSecret("");
-      setSecretSaved(false);
 
       // Auto-navigate to Borrow page after 3 seconds
+
       setTimeout(() => {
         toast.success('Redirecting to Borrow page...');
         navigate('/borrow');
